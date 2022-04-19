@@ -1,8 +1,6 @@
+import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-
-
-class World:
-    has_started = False
+from tick import World, tick
 
 
 router = {}
@@ -12,11 +10,13 @@ def setup_idle_router():
     router["/"] = ep_idle_index
     router["/start"] = ep_start
     router["/stop"] = ep_idle_index
+    router["/view"] = ep_view
 
 def setup_active_router():
     router["/"] = ep_active_index
     router["/start"] = ep_active_index
     router["/stop"] = ep_stop
+    router["/view"] = None
 
 def ep_static(req):
     req.File("/".join(["statics"] + req.path.split("/")[2:]))
@@ -27,15 +27,21 @@ def ep_idle_index(req):
 def ep_active_index(req):
     req.File("views/active_index.html")
 
+def ep_view(req):
+    req.send_response(200, "OK")
+    req.send_header("Content-Type", "application/json")
+    req.end_headers()
+    req.wfile.write(bytes(json.dumps(World.data), encoding='utf8'))
+
 def ep_start(req):
-    World.has_started = True
+    World.start()
     setup_active_router()
     req.Redirect("/")
 
 def ep_stop(req):
-    World.has_started = False
+    World.stop()
     setup_idle_router()
-    req.Redirect("/")
+    req.Redirect("/view")
 
 
 setup_idle_router()
@@ -65,9 +71,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 self.send_response(404, "Nope")
                 self.end_headers()
 
-
-def tick():
-    print("has_started", World.has_started)
 
 class Server(HTTPServer):
 
