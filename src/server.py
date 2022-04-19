@@ -7,6 +7,7 @@ class World:
 
 router = {}
 
+
 def setup_idle_router():
     router["/"] = ep_idle_index
     router["/start"] = ep_start
@@ -17,29 +18,24 @@ def setup_active_router():
     router["/start"] = ep_active_index
     router["/stop"] = ep_stop
 
+def ep_static(req):
+    req.File("/".join(["statics"] + req.path.split("/")[2:]))
+
 def ep_idle_index(req):
-    req.send_response(200, "OK")
-    req.end_headers()
-    req.wfile.write(b"World is not started\n")
+    req.File("views/idle_index.html")
 
 def ep_active_index(req):
-    req.send_response(200, "OK")
-    req.end_headers()
-    req.wfile.write(b"World has started\n")
+    req.File("views/active_index.html")
 
 def ep_start(req):
     World.has_started = True
-    req.send_response(303, "Let's go")
-    req.send_header("Location", "/")
-    req.end_headers()
     setup_active_router()
+    req.Redirect("/")
 
 def ep_stop(req):
     World.has_started = False
-    req.send_response(303, "Let's go")
-    req.send_header("Location", "/")
-    req.end_headers()
     setup_idle_router()
+    req.Redirect("/")
 
 
 setup_idle_router()
@@ -47,14 +43,36 @@ setup_idle_router()
 
 class HTTPRequestHandler(BaseHTTPRequestHandler):
 
-    def do_GET(self):
-        router[self.path](self)
+    def File(self, filename):
+        self.send_response(200, "OK")
+        self.end_headers()
+        with open(filename, "rb") as f:
+            self.wfile.write(f.read())
 
+    def Redirect(self, path):
+        self.send_response(303, "Let's go")
+        self.send_header("Location", path)
+        self.end_headers()
+
+    def do_GET(self):
+        try:
+            router[self.path](self)
+        except KeyError:
+            # Handle static files
+            if self.path.startswith("/s"):
+                ep_static(self)
+            else:
+                self.send_response(404, "Nope")
+                self.end_headers()
+
+
+def tick():
+    print("has_started", World.has_started)
 
 class Server(HTTPServer):
 
     def service_actions(self):
-        print("has_started", World.has_started)
+        tick()
 
 
 Server(("", 8000), HTTPRequestHandler).serve_forever(poll_interval=2)
