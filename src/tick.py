@@ -1,16 +1,21 @@
+import time
 from cereal.messaging import SubMaster
 
 class World:
     has_started = False
+    start_time = 0
 
     sm = None
     data = {}
+    header = {}
 
     @staticmethod
     def start():
         World.sm = SubMaster(["sensorEvents"])
         World.has_started = World.sm is not None
-        World.data = {"data":[]}
+        World.data = []
+        World.rows = [{"key": "sensorEvents/gyroUncalibrated/v"}]
+        World.start_time = time.time()
 
     @staticmethod
     def stop():
@@ -18,11 +23,15 @@ class World:
         World.has_started = False
 
 def tick():
-    print("has_started", World.has_started)
     if not World.has_started:
         return
 
+    t = time.time()
     World.sm.update()
     for ev in World.sm["sensorEvents"]:
         if ev.sensor == 5:
-            World.data["data"].append(list(ev.gyroUncalibrated.v))
+            World.data.append({
+                "time": t - World.start_time,
+                World.rows[0]["key"]: ev.gyroUncalibrated.v[0],
+            })
+

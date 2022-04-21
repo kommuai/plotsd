@@ -11,12 +11,14 @@ def setup_idle_router():
     router["/start"] = ep_start
     router["/stop"] = ep_idle_index
     router["/view"] = ep_view
+    router["/data.json"] = ep_data
 
 def setup_active_router():
     router["/"] = ep_active_index
     router["/start"] = ep_active_index
     router["/stop"] = ep_stop
     router["/view"] = None
+    router["/data.json"] = None
 
 def ep_static(req):
     req.File("/".join(["statics"] + req.path.split("/")[2:]))
@@ -28,10 +30,17 @@ def ep_active_index(req):
     req.File("views/active_index.html")
 
 def ep_view(req):
+    req.File("views/plot.html")
+
+def ep_data(req):
     req.send_response(200, "OK")
     req.send_header("Content-Type", "application/json")
     req.end_headers()
-    req.wfile.write(bytes(json.dumps(World.data), encoding='utf8'))
+    resp = {
+            "data": World.data,
+            "rows": World.rows,
+            }
+    req.wfile.write(bytes(json.dumps(resp), encoding='utf8'))
 
 def ep_start(req):
     World.start()
@@ -78,4 +87,4 @@ class Server(HTTPServer):
         tick()
 
 
-Server(("", 8000), HTTPRequestHandler).serve_forever(poll_interval=2)
+Server(("", 8000), HTTPRequestHandler).serve_forever(poll_interval=0.1)
