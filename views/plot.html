@@ -25,21 +25,26 @@ div {
 (async function() {
     const raw = await (await fetch("data.json")).json();
     const data = {
-            datasets: [{
-                    borderColor: 'red',
-                    data: raw["data"],
-                    label: raw["rows"][0]["key"],
-                }],
+            datasets: [],
         };
+
+    const colors = ["red", "blue"];
+    raw["rows"].forEach( (e, i) => {
+        data.datasets.push({
+            borderColor: colors[i],
+            data: raw["data"],
+            label: e["key"],
+            parsing: {
+                xAxisKey: "time",
+                yAxisKey: e["key"],
+            },
+        });
+    });
 
     const config = {
             data: data,
             options: {
                     animation: false,
-                    parsing: {
-                            xAxisKey: 'time',
-                            yAxisKey: raw["rows"][0]["key"],
-                        },
                     plugins: {
                             zoom: {
                                     pan: {

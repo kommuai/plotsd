@@ -14,7 +14,10 @@ class World:
         World.sm = SubMaster(["sensorEvents"])
         World.has_started = World.sm is not None
         World.data = []
-        World.rows = [{"key": "sensorEvents/gyroUncalibrated/v"}]
+        World.rows = [
+                {"key": "sensorEvents/gyroUncalibrated/v"},
+                {"key": "put_any_string_also_can_but_this_is_v1"},
+                ]
         World.start_time = time.time()
 
     @staticmethod
@@ -33,5 +36,6 @@ def tick():
             World.data.append({
                 "time": t - World.start_time,
                 World.rows[0]["key"]: ev.gyroUncalibrated.v[0],
+                World.rows[1]["key"]: ev.gyroUncalibrated.v[1],
             })
 
